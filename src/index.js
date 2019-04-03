@@ -4,6 +4,7 @@ const path = require('path');
 const exphbs = require('express-handlebars');
 const session = require('express-session');
 const validator = require('express-validator');
+const passport = require('passport');
 const flash = require('connect-flash');
 const MySQLStore = require('express-mysql-session')(session);
 const bodyParser = require('body-parser');
@@ -12,15 +13,17 @@ const { database } = require('./keys');
 
 // Intializations
 const app = express();
+require('./lib/passport');
 
 // Settings
-app.set('port', process.env.PORT || 4004);
+app.set('port', process.env.PORT || 4000);
 app.set('views', path.join(__dirname, 'views'));
 app.engine('.hbs', exphbs({
   defaultLayout: 'main',
   layoutsDir: path.join(app.get('views'), 'layouts'),
-  //partialsDir: path.join(app.get('views'), 'partials'),
+  partialsDir: path.join(app.get('views'), 'partials'),
   extname: '.hbs',
+  helpers: require('./lib/handlebars')
 }))
 app.set('view engine', '.hbs');
 
@@ -36,6 +39,8 @@ app.use(session({
   store: new MySQLStore(database)
 }));
 app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(validator());
 
 // Global variables
@@ -48,8 +53,8 @@ app.use((req, res, next) => {
 
 // Routes
 app.use(require('./routes/index'));
-//app.use(require('./routes/authentication'));
-//app.use('/links', require('./routes/links'));
+app.use(require('./routes/authentication'));
+app.use('/links', require('./routes/links'));
 
 // Public
 app.use(express.static(path.join(__dirname, 'public')));
